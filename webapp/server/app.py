@@ -7,7 +7,8 @@ import os
 import base64
 from datetime import datetime
 import csv
-from sheets import log_to_google_sheets  # ✅ Make sure this is configured
+from sheets import log_to_google_sheets
+from flask import send_from_directory
 
 app = Flask(__name__)
 CORS(app)
@@ -15,25 +16,23 @@ CORS(app)
 DATASET_DIR = "dataset"
 LOGS_DIR = "logs"
 
-# Load known faces from dataset folder
+# Load known faces
 def load_known_faces():
-    encodings = []
-    names = []
+    encodings, names = [], []
     for file in os.listdir(DATASET_DIR):
         if file.lower().endswith(".jpg"):
             image = face_recognition.load_image_file(os.path.join(DATASET_DIR, file))
             encs = face_recognition.face_encodings(image)
             if encs:
                 encodings.append(encs[0])
-                names.append(file.split("_")[0])  # e.g., "arnab_1.jpg" -> "arnab"
+                names.append(file.split("_")[0])
     return encodings, names
 
-# Decode base64 image from frontend
+# Decode base64 image
 def decode_image(data):
     encoded_data = data.split(',')[1]
     nparr = np.frombuffer(base64.b64decode(encoded_data), np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    return img
+    return cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
 @app.route("/api/register", methods=["POST"])
 def register():
@@ -43,6 +42,7 @@ def register():
     count = len([f for f in os.listdir(DATASET_DIR) if f.startswith(name)]) + 1
     filename = f"{name}_{count}.jpg"
     img = decode_image(image_data)
+    os.makedirs(DATASET_DIR, exist_ok=True)
     path = os.path.join(DATASET_DIR, filename)
     cv2.imwrite(path, img)
     return jsonify({"status": "success", "saved": filename})
@@ -101,6 +101,63 @@ def get_logs():
             reader = csv.reader(f)
             data = list(reader)
     return jsonify(data)
+
+@app.route("/api/dataset", methods=["GET"])
+def get_dataset():
+    images = []
+    for file in os.listdir(DATASET_DIR):
+        if file.lower().endswith(".jpg"):
+            path = os.path.join(DATASET_DIR, file)
+            with open(path, "rb") as f:
+                encoded = base64.b64encode(f.read()).decode('utf-8')
+                images.append({"filename": file, "base64": encoded})
+    return jsonify(images)
+
+@app.route("/api/delete", methods=["POST"])
+def delete_dataset_image():
+    content = request.json
+    filename = content.get("filename")
+    if filename:
+        path = os.path.join(DATASET_DIR, filename)
+        if os.path.exists(path):
+            os.remove(path)
+            return jsonify({"status": "deleted", "filename": filename})
+    return jsonify({"status": "error", "message": "File not found"}), 404
+
+@app.route("/api/clear_logs", methods=["POST"])
+def clear_logs():
+    content = request.json
+    target_date = content.get("before_date")
+    try:
+        cutoff = datetime.strptime(target_date, "%Y-%m-%d")
+    except ValueError:
+        return jsonify({"message": "Invalid date format"}), 400
+
+    deleted_count = 0
+    for filename in os.listdir(LOGS_DIR):
+        if filename.startswith("attendance_") and filename.endswith(".csv"):
+            date_str = filename.replace("attendance_", "").replace(".csv", "")
+            try:
+                file_date = datetime.strptime(date_str, "%Y-%m-%d")
+            except ValueError:
+                continue
+            if file_date < cutoff:
+                os.remove(os.path.join(LOGS_DIR, filename))
+                deleted_count += 1
+
+    return jsonify({"message": f"Deleted {deleted_count} old log files."})
+
+@app.route('/api/list_faces')
+def list_faces():
+    files = [f for f in os.listdir(DATASET_DIR) if f.lower().endswith(".jpg")]
+    return jsonify(files)
+
+@app.route('/dataset/<path:filename>')
+def serve_dataset_file(filename):
+    return send_from_directory(DATASET_DIR, filename)
+
+
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

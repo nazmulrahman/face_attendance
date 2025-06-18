@@ -94,7 +94,6 @@ function AdminPanel() {
 
 function ManageFaces() {
   const [images, setImages] = useState([]);
-  const [search, setSearch] = useState("");
 
   useEffect(() => {
     fetch("/api/dataset")
@@ -114,60 +113,22 @@ function ManageFaces() {
     }
   };
 
-  const filteredImages = images.filter(img =>
-    img.filename.toLowerCase().includes(search.toLowerCase())
-  );
-
   return (
     <div className="text-center">
-      <h2 className="text-4xl font-bold text-red-400 mb-4">Manage Dataset</h2>
-
-      <div className="flex mt-8 justify-center items-center gap-60">
-        <div className="mb-4">
-          <input
-            type="text"
-            placeholder="Search by name..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="border rounded p-2 w-72"
-          />
-        </div>
-
-        <div className="mb-8">        
-          <Link
-            to="/admin-panel"
-            className="btn bg-gray-500 hover:bg-gray-600 rounded-lg shadow-xl outline-gray-500 outline outline-offset-2 py-2 px-6 mt-6 inline-block"
-          >
-            Back to Admin Panel
-          </Link>
-        </div>
-
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-        {filteredImages.map((img, i) => (
-          <div key={i} className="bg-white shadow-lg rounded-xl p-2">
-            <img
-              src={`data:image/jpeg;base64,${img.base64}`}
-              alt={img.filename}
-              className="w-full rounded mb-2"
-            />
+      <h2 className="text-4xl font-bold text-red-700 mb-4">Manage Dataset</h2>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+        {images.map((img, i) => (
+          <div key={i} className="bg-white shadow-lg rounded p-2">
+            <img src={`data:image/jpeg;base64,${img.base64}`} alt={img.filename} className="w-full rounded mb-2" />
             <p className="text-sm font-bold text-gray-700">{img.filename}</p>
-            <button
-              onClick={() => deleteImage(img.filename)}
-              className="btn bg-red-500 hover:bg-red-600 text-white rounded-lg px-4 py-1 mt-2"
-            >
-              Delete
-            </button>
+            <button onClick={() => deleteImage(img.filename)} className="btn bg-red-500 hover:bg-red-600 text-white rounded-lg px-4 py-1 mt-2">Delete</button>
           </div>
         ))}
       </div>
-
-      
+      <Link to="/admin-panel" className="btn bg-gray-500 hover:bg-gray-600 rounded-lg shadow-xl outline-gray-500 outline outline-offset-2 py-2 px-6 mt-6 inline-block">Back to Admin Panel</Link>
     </div>
   );
 }
-
 
 
 
