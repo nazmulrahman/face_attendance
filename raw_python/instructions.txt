@@ -1,0 +1,37 @@
+==============================
+🧠 Manual Confirmation Attendance System
+==============================
+
+🔧 Requirements:
+----------------
+Install these if not done:
+
+    sudo apt update
+    sudo apt install python3-pip cmake build-essential libboost-all-dev -y
+    pip3 install opencv-python face_recognition numpy pandas
+
+📂 Folder Structure:
+--------------------
+face_attendance_confirm_manual/
+├── dataset/             ← Registered face images
+├── logs/                ← Daily attendance CSVs
+├── register_faces.py    ← Take multiple photos (auto-numbered)
+├── main.py              ← Detect faces, press 'l' to log
+├── view_today.py        ← View today's log
+
+🧪 Usage:
+---------
+1️⃣ Register multiple face images:
+    python3 register_faces.py
+
+2️⃣ Run main attendance (Press 'l' to confirm entry):
+    python3 main.py
+
+3️⃣ View today's log:
+    python3 view_today.py
+
+✅ Output:
+----------
+Logs saved in `logs/attendance_YYYY-MM-DD.csv`
+
+🎯 Press 'q' to quit main program.
