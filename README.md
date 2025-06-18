@@ -100,4 +100,4 @@ content: ["./src/**/*.{js,jsx,ts,tsx}"]
 
 ## ✅ License
 
-MIT © Nyza Engineering Design
+MIT © <a href="https://nyzaengineering.com">Nyza Engineering Design</a>
