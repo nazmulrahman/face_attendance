@@ -7,7 +7,7 @@ import os
 import base64
 from datetime import datetime
 import csv
-from sheets import log_to_google_sheets  # ✅ Make sure sheets.py is configured
+from sheets import log_to_google_sheets  # ✅ Make sure this is configured
 
 app = Flask(__name__)
 CORS(app)
@@ -54,7 +54,6 @@ def recognize():
     frame = decode_image(image_data)
 
     known_encodings, known_names = load_known_faces()
-
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     face_locations = face_recognition.face_locations(rgb_frame)
     face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
@@ -66,21 +65,42 @@ def recognize():
             matched_index = match_results.index(True)
             name = known_names[matched_index]
 
-    if name != "Unknown":
-        today = datetime.now().strftime("%Y-%m-%d")
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        log_path = os.path.join(LOGS_DIR, f"attendance_{today}.csv")
-        with open(log_path, "a", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow([name, today, timestamp])
-
-        # ✅ Log to Google Sheets
-        try:
-            log_to_google_sheets(name)
-        except Exception as e:
-            print("Google Sheets logging failed:", e)
-
     return jsonify({"name": name})
+
+@app.route("/api/insert_attendance", methods=["POST"])
+def insert_attendance():
+    content = request.json
+    name = content["name"]
+
+    if name == "Unknown":
+        return jsonify({"error": "Unknown face, not logged."}), 400
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    log_path = os.path.join(LOGS_DIR, f"attendance_{today}.csv")
+
+    os.makedirs(LOGS_DIR, exist_ok=True)
+    with open(log_path, "a", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow([name, today, timestamp])
+
+    try:
+        log_to_google_sheets(name)
+    except Exception as e:
+        print("Google Sheets logging failed:", e)
+
+    return jsonify({"status": "logged", "name": name})
+
+@app.route("/api/logs", methods=["GET"])
+def get_logs():
+    today = datetime.now().strftime("%Y-%m-%d")
+    log_file = os.path.join(LOGS_DIR, f"attendance_{today}.csv")
+    data = []
+    if os.path.exists(log_file):
+        with open(log_file, newline="") as f:
+            reader = csv.reader(f)
+            data = list(reader)
+    return jsonify(data)
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

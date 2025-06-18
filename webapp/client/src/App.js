@@ -49,6 +49,11 @@ function Attendance() {
 
   const insertAttendance = async () => {
     if (name && name !== "Unknown") {
+      await fetch("/api/insert_attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name })
+      });
       navigate("/success");
     } else {
       alert("Cannot confirm face. Please ensure you're in frame.");
@@ -125,17 +130,85 @@ function RegisterFace() {
 }
 
 function Logs() {
+  const [logs, setLogs] = useState([]);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(20);
+
+  useEffect(() => {
+    fetch("/api/logs")
+      .then(res => res.json())
+      .then(data => setLogs(data))
+      .catch(err => console.error("Failed to fetch logs:", err));
+  }, []);
+
+  const paginatedLogs = logs.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
+  const totalPages = Math.ceil(logs.length / rowsPerPage);
+
+  const exportCSV = () => {
+    const csvContent = ["Name,Date,Time", ...logs.map(row => row.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "attendance_logs.csv");
+    link.click();
+  };
+
   return (
     <div className="text-center">
-      <h2 className="text-xl font-semibold text-green-700">Attendance Logs</h2>
-      <a
-        href="https://docs.google.com/spreadsheets/d/1SxjHRf4eVyyLU5OeQAZy17iaSHituaeH3mwppOdVF6w/edit?gid=0#gid=0"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-blue-600 underline"
-      >
-        View Logs on Google Sheets
-      </a>
+      <h2 className="text-xl font-semibold text-green-700 mb-2">Attendance Logs</h2>
+
+      <div className="mb-4">
+        <label className="mr-2">Show:</label>
+        <select value={rowsPerPage} onChange={e => { setRowsPerPage(Number(e.target.value)); setPage(0); }} className="border p-1">
+          <option value={20}>20</option>
+          <option value={50}>50</option>
+          <option value={100}>100</option>
+        </select>
+      </div>
+
+      <div className="overflow-x-auto max-w-4xl mx-auto mb-6">
+        <table className="table-auto w-full border border-gray-300">
+          <thead>
+            <tr className="bg-green-200">
+              <th className="px-4 py-2">Name</th>
+              <th className="px-4 py-2">Date</th>
+              <th className="px-4 py-2">Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paginatedLogs.map((row, idx) => (
+              <tr key={idx} className="bg-white border-t">
+                <td className="px-4 py-2">{row[0]}</td>
+                <td className="px-4 py-2">{row[1]}</td>
+                <td className="px-4 py-2">{row[2]}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="mb-4 flex justify-center gap-2">
+        {page > 0 && (
+          <button onClick={() => setPage(page - 1)} className="btn bg-green-500 text-white">Previous</button>
+        )}
+        {page + 1 < totalPages && (
+          <button onClick={() => setPage(page + 1)} className="btn bg-green-600 text-white">Next</button>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-2 items-center">
+        <button onClick={exportCSV} className="btn bg-yellow-500 text-white">Export as CSV</button>
+        <a
+          href="https://docs.google.com/spreadsheets/d/1SxjHRf4eVyyLU5OeQAZy17iaSHituaeH3mwppOdVF6w"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn bg-blue-500 text-white"
+        >
+          View Logs on Google Sheets
+        </a>
+        <Link to="/" className="btn bg-gray-600">Home</Link>
+      </div>
     </div>
   );
 }
