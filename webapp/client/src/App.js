@@ -129,7 +129,7 @@ function Logs() {
     <div className="text-center">
       <h2 className="text-xl font-semibold text-green-700">Attendance Logs</h2>
       <a
-        href="https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID_HERE"
+        href="https://docs.google.com/spreadsheets/d/1SxjHRf4eVyyLU5OeQAZy17iaSHituaeH3mwppOdVF6w/edit?gid=0#gid=0"
         target="_blank"
         rel="noopener noreferrer"
         className="text-blue-600 underline"

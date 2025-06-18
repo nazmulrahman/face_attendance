@@ -1,5 +1,3 @@
-# server/app.py
-
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import face_recognition
@@ -9,6 +7,7 @@ import os
 import base64
 from datetime import datetime
 import csv
+from sheets import log_to_google_sheets  # ✅ Make sure sheets.py is configured
 
 app = Flask(__name__)
 CORS(app)
@@ -74,6 +73,12 @@ def recognize():
         with open(log_path, "a", newline="") as f:
             writer = csv.writer(f)
             writer.writerow([name, today, timestamp])
+
+        # ✅ Log to Google Sheets
+        try:
+            log_to_google_sheets(name)
+        except Exception as e:
+            print("Google Sheets logging failed:", e)
 
     return jsonify({"name": name})
 
